@@ -38,7 +38,7 @@ class Trainer(object):
 
         _logger.info('Trainer initialized.')
 
-    def run(self):
+    def run(self, render: bool = False):
         """ Run the training process. """
         self.scores = []  # list containing scores from each episode
         scores_window = deque(maxlen=self.print_range)  # last 100 scores
@@ -49,7 +49,8 @@ class Trainer(object):
             done = False
 
             while not done:
-                #self.env.render()
+                if render:
+                    self._env.render()
 
                 action = self._agent.act(state)
 
