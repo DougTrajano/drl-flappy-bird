@@ -13,7 +13,7 @@ class Trainer(object):
         """
         Reinforcement Learning trainer.
 
-        Parameters:
+        Args:
         - agent: Agent to train.
         - env: Environment to train on.
         - n_episodes: maximum number of training episodes
@@ -39,6 +39,7 @@ class Trainer(object):
         _logger.info('Trainer initialized.')
 
     def run(self):
+        """ Run the training process. """
         self.scores = []  # list containing scores from each episode
         scores_window = deque(maxlen=self.print_range)  # last 100 scores
 

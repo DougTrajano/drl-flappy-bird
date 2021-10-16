@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from src.ddqn.network import QNetwork
-from src.ddqn.memory import PrioritizedMemory, ReplayMemory
+from src.dqn.network import QNetwork
+from src.dqn.memory import PrioritizedMemory, ReplayMemory
 from src.base import Agent
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -23,7 +23,7 @@ class Agent(Agent):
                  epsilon_start: float = 1.0, epsilon_end: float = 0.01, epsilon_decay: float = 0.995,
                  **kwargs):
         """
-        Initialize a Dueling Deep Q-Learning agent.
+        Initialize a Deep Q-Network agent.
         
         Parameters:
         - state_size: dimension of each state
