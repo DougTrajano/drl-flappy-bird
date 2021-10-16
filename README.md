@@ -6,7 +6,9 @@ This repository contains our term project in the Reinforcement Learning course i
 
 The environment used in this project is an implementation of the Flappy Bird game using the OpenAI Gym library.
 
-We are using the version (`FlappyBird-rgb-v0`) that uses images as observations. Each observation is an array of size `288 x 512 x 3` containing the RGB values of the pixels of the image.
+We are using the version (`FlappyBird-rgb-v0`) that uses images as observations.
+
+Each observation is an array of size `288 x 512 x 3` containing the RGB values of the pixels of the image.
 
 <p align="center">
   <img align="center" 
@@ -26,7 +28,7 @@ See more in [Talendar/flappy-bird-gym: An OpenAI Gym environment for the Flappy 
 
 ## RL Algorithms
 
-- [Dueling Deep Q-Network (DDQN)](notebooks/DuelingDQN.ipynb)
+- [Deep Q-Network (DQN)](notebooks/DQN.ipynb)
 - DDPG (coming soon)
 
 ## Changelog
