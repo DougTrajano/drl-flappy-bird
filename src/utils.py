@@ -1,7 +1,9 @@
 import time
+import logging
 from gym import Env
 from src.base import Agent
 
+_logger = logging.getLogger(__name__)
 
 def play_env(agent: Agent, env: Env, fps: int = 30, render: bool = False):
     """
@@ -13,6 +15,8 @@ def play_env(agent: Agent, env: Env, fps: int = 30, render: bool = False):
     - fps: Frames per second.
     - render: Render the environment.
     """
+    _logger.info("Playing environment...")
+
     score = 0
     
     state = env.reset()
@@ -20,17 +24,17 @@ def play_env(agent: Agent, env: Env, fps: int = 30, render: bool = False):
         if render:
             env.render()
             time.sleep(1 / fps)
-
         action = agent.act(state)
         next_state, reward, done, _ = env.step(action)
-        
         state = next_state.copy()
         score += reward
-        print(f"\rScore: {score:.2f}", end="")
-
         if done:
             break
+        print(f"\rScore: {score:.2f}", end="")
         
     print(f"\rScore: {score:.2f}")
     env.close()
+    
+    _logger.info("Environment finished.")
+
     return score

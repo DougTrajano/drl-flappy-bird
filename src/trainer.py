@@ -50,10 +50,14 @@ class Trainer(object):
         - fps: Frames per second (only if render is True).
         - logs_callback: Callback function that provides logs (returns a str or None).
         """
+        _logger.info('Starting training...')
+
         self.scores = []
         scores_window = deque(maxlen=self.print_range)
 
         for ep in range(1, self.n_episodes+1):
+            _logger.info(f"Episode {ep}/{self.n_episodes}")
+
             state = self._env.reset()
             score = 0
             done = False
@@ -97,12 +101,14 @@ class Trainer(object):
 
             if np.mean(scores_window) >= self.early_stop and ep > 10:
                 if self.verbose:
-                    print(f'\nEnvironment solved in {ep:d} episodes!\tAvg Score: {np.mean(scores_window):.2f}')
+                    print(f"\nEnvironment solved in {ep:d} episodes!\tAvg Score: {np.mean(scores_window):.2f}")
                 break
 
         self._env.reset()
 
         self.best_score = np.mean(scores_window)
         self.last_episode = ep
+
+        _logger.info(f"Training finished.\nBest score: {self.best_score:.2f}")
 
         return True

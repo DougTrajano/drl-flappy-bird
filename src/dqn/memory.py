@@ -1,9 +1,12 @@
 import torch
 import random
+import logging
 import numpy as np
 from collections import namedtuple, deque
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+_logger = logging.getLogger(__name__)
 
 class PrioritizedMemory:
     """
@@ -13,12 +16,12 @@ class PrioritizedMemory:
     def __init__(self, memory_size: int, batch_size: int, alpha: float = 0.7):
         """Initialize a ReplayMemory object.
 
-        Parameters
+        Parameters:
         - memory_size: maximum size of memory
         - batch_size: size of each training batch
         - alpha: determines how much prioritization is used
         """
-        self.capacity = memory_size
+        self.memory_size = memory_size
         self.memory = deque(maxlen=memory_size)
         self.alpha = alpha
         self.batch_size = batch_size
@@ -26,6 +29,8 @@ class PrioritizedMemory:
         self.probabilities = np.zeros(memory_size)
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
         
+        _logger.info(f"Prioritized Memory initialized with capacity: {self.memory_size} items.")
+
     def add(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray, done: bool):
         """Add a new experience to memory.
 
@@ -36,7 +41,7 @@ class PrioritizedMemory:
         - next_state: next state
         - done: whether the episode is done
         """
-
+        _logger.debug(f"Adding new experience to memory.")
         priority_max = max(self.priority) if self.memory else 1
         e = self.experience(state, action, reward, next_state, done)
         
@@ -49,6 +54,8 @@ class PrioritizedMemory:
         Args:
         - beta: determines how much prioritization is used
         """
+        _logger.debug("Sampling batch of experiences.")
+
         self.update_probabilities()
         index = np.random.choice(range(self.capacity), self.batch_size, replace=False, p=self.probabilities)
         experiences = [self.memory[i] for i in index]
@@ -102,8 +109,11 @@ class ReplayMemory:
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
     
+        _logger.info(f"Replay Memory initialized with capacity: {self.memory_size} items.")
+
     def add(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray, done: bool):
         """Add a new experience to memory."""
+        _logger.debug("Adding new experience to memory.")
         e = self.experience(state, action, reward, next_state, done)
         self.memory.append(e)
     
