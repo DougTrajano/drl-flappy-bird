@@ -1,3 +1,4 @@
+import time
 import logging
 import numpy as np
 from gym import Env
@@ -38,53 +39,70 @@ class Trainer(object):
 
         _logger.info('Trainer initialized.')
 
-    def run(self, render: bool = False):
-        """ Run the training process. """
-        self.scores = []  # list containing scores from each episode
-        scores_window = deque(maxlen=self.print_range)  # last 100 scores
+    def run(self, max_timestep: int = None, render: bool = False,
+            fps: int = 30, logs_callback: callable = None):
+        """
+        Run the training session.
+        
+        Args:
+        - max_timestep: maximum number of timesteps per episode.
+        - render: Render the environment.
+        - fps: Frames per second (only if render is True).
+        - logs_callback: Callback function that provides logs (returns a str or None).
+        """
+        self.scores = []
+        scores_window = deque(maxlen=self.print_range)
 
-        for i in range(1, self.n_episodes+1):
+        for ep in range(1, self.n_episodes+1):
             state = self._env.reset()
             score = 0
             done = False
 
-            while not done:
-                if render:
-                    self._env.render()
+            if max_timestep is not None:
+                for _ in range(max_timestep):
+                    if render:
+                        self._env.render()
+                        time.sleep(1 / fps)
+                    action = self._agent.act(state)
+                    next_state, reward, done, _ = self._env.step(action)
+                    self._agent.step(state, action, reward, next_state, done, ep)
+                    state = next_state.copy()
+                    score += reward
+                    if done:
+                        break                    
+            else:
+                while not done:
+                    if render:
+                        self._env.render()
+                        time.sleep(1 / fps)
+                    action = self._agent.act(state)
+                    next_state, reward, done, _ = self._env.step(action)
+                    self._agent.step(state, action, reward, next_state, done, ep)
+                    state = next_state.copy()
+                    score += reward
+                    if done:
+                        break
 
-                action = self._agent.act(state)
-
-                next_state, reward, done, info = self._env.step(action)
-
-                self._agent.step(state, action, reward, next_state, done, i)
-
-                state = next_state.copy()
-
-                score += reward
-
-                if done:
-                    break
-
-            scores_window.append(score) # save most recent score
-            self.scores.append(score) # save most recent score
+            scores_window.append(score)
+            self.scores.append(score)
 
             if self.verbose:
-                print('\rEpisode {}\tAvg Score: {:.2f}'.format(
-                    i, np.mean(scores_window)), end="")
-                if i % self.print_range == 0:
-                    self.logs.append({"episode": i, "score": np.mean(scores_window)})
-                    print('\rEpisode {}\tAvg Score: {:.2f}'.format(
-                        i, np.mean(scores_window)))
+                log_msg = f"\rEpisode {ep}\tAvg Score: {np.mean(scores_window):.2f}"
+                if logs_callback and logs_callback():
+                    log_msg += "\t" + logs_callback()
+                print(log_msg, end="")
+                if ep % self.print_range == 0:
+                    self.logs.append({"episode": ep, "avg_score": np.mean(scores_window)})
+                    print(log_msg)
 
-            if np.mean(scores_window) >= self.early_stop and i > 10:
+            if np.mean(scores_window) >= self.early_stop and ep > 10:
                 if self.verbose:
-                    print('\nEnvironment solved in {:d} episodes!\tAvg Score: {:.2f}'.format(
-                        i, np.mean(scores_window)))
+                    print(f'\nEnvironment solved in {ep:d} episodes!\tAvg Score: {np.mean(scores_window):.2f}')
                 break
 
-        self._env.close()
+        self._env.reset()
 
         self.best_score = np.mean(scores_window)
-        self.last_episode = i
+        self.last_episode = ep
 
         return True

@@ -19,17 +19,18 @@ def play_env(agent: Agent, env: Env, fps: int = 30, render: bool = False):
     while True:
         if render:
             env.render()
+            time.sleep(1 / fps)
 
         action = agent.act(state)
-        next_state, reward, done, info = env.step(action)
+        next_state, reward, done, _ = env.step(action)
         
+        state = next_state.copy()
         score += reward
-        state = next_state
+        print(f"\rScore: {score:.2f}", end="")
 
-        time.sleep(1 / fps)
-        
         if done:
             break
         
-    print(f"Score: {score}")
+    print(f"\rScore: {score:.2f}")
     env.close()
+    return score

@@ -97,7 +97,7 @@ class ReplayMemory:
         - memory_size: maximum size of memory
         - batch_size: size of each training batch
         """
-        self.capacity = memory_size
+        self.memory_size = memory_size
         self.memory = deque(maxlen=memory_size)  
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])

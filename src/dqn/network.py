@@ -7,7 +7,7 @@ class QNetwork(nn.Module):
     """Actor (Policy) Model."""
 
     def __init__(self, state_size: int, action_size: int,
-                 layers: Tuple, seed: int = 199):
+                 layers: Tuple = (64, 64), seed: int = 1993):
         """Initialize parameters and build model.
         Params
         ======

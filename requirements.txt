@@ -4,5 +4,9 @@ cupy-cuda102==9.5.0
 numpy==1.21.2
 matplotlib==3.4.3
 tqdm==4.62.3
-gym==0.18.0
+gym==0.21.0
 flappy-bird-gym==0.3.0
+
+swig==4.0.2 #LunarLander-v2
+box2d-py==2.3.8 #LunarLander-v2
+Box2D==2.3.10 #LunarLander-v2

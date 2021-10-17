@@ -20,6 +20,16 @@ class Agent:
 
         _logger.info("Random Agent initialized")
 
+    def logs(self):
+        """
+        Logs the agent's performance.
+        You can replace this function with your own implementation.
+
+        Returns:
+        - A string with the log message.
+        """
+        return None
+        
     def act(self, state: np.ndarray):
         """
         Returns a random action

@@ -16,7 +16,7 @@ class Agent(Agent):
     """Interacts with and learns from the environment."""
 
     def __init__(self, state_size: int, action_size: int, seed: int = 1993,
-                 nb_hidden: int = 128, learning_rate: float = 5e-4,
+                 nb_hidden: tuple = (64, 64), learning_rate: float = 5e-4,
                  memory_size: int = int(1e5), prioritized_memory: bool = False,
                  batch_size: int = 64, gamma: float = 0.99, tau: float = 1e-3,
                  small_eps: float = 1e-5, update_every: int = 4,
@@ -63,9 +63,9 @@ class Agent(Agent):
         self.losses = []
 
         # Q-Network
-        self.qnetwork_local = QNetwork(self.state_size, self.action_size, layers=nb_hidden, seed=seed).to(device)
-        self.qnetwork_target = QNetwork(self.state_size, self.action_size, layers=nb_hidden, seed=seed).to(device)       
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=self.learning_rate)
+        self.qnet_local = QNetwork(self.state_size, self.action_size, layers=nb_hidden, seed=seed).to(device)
+        self.qnet_target = QNetwork(self.state_size, self.action_size, layers=nb_hidden, seed=seed).to(device)       
+        self.optimizer = optim.Adam(self.qnet_local.parameters(), lr=self.learning_rate)
 
         # Define memory
         if self.prioritized_memory:
@@ -76,8 +76,23 @@ class Agent(Agent):
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
 
+    def logs(self):
+        """
+        Get the logs of the agent.
+
+        Returns:
+        - A string with the log message.
+        """
+        # Compute the avg loss of the last 100 episodes
+        if len(self.losses) > 0:
+            avg_loss = int(torch.mean(torch.stack(self.losses[-100:])))
+        else:
+            avg_loss = float("inf")
+
+        return f"Epsilon: {self.epsilon:.2f}\tAvg. MSE Loss: {avg_loss:.2f}"
+        
     def step(self, state: np.ndarray, action: int, reward: float,
-             next_state: np.ndarray, done: bool, i: int):
+             next_state: np.ndarray, done: bool, episode: int):
         """
         Save experience in replay memory, and use experiences from memory to learn.
         
@@ -87,7 +102,7 @@ class Agent(Agent):
         - reward: reward received
         - next_state: next state
         - done: if the episode is over
-        - i: current step
+        - episode: current episode (only used for prioritized memory).
         """
         # Preprocessing states
         state = self.prep_state(state)
@@ -102,7 +117,7 @@ class Agent(Agent):
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.batch_size:
                 if self.prioritized_memory:
-                    experiences = self.memory.sample(self.get_beta(i))
+                    experiences = self.memory.sample(self.get_beta(episode))
                 else:
                     experiences = self.memory.sample()
                     
@@ -111,7 +126,7 @@ class Agent(Agent):
     # Decay epsilon
     def decay_eps(self):
         """
-        Decay epsilon.
+        Decay epsilon-greedy used for action selection.
         """
         self.epsilon = max(self.epsilon_end, self.epsilon_decay * self.epsilon)
 
@@ -119,21 +134,20 @@ class Agent(Agent):
         """Returns actions for given state as per current policy.
         
         Args:
-        - state: current state
-        - eps: epsilon, for epsilon-greedy action selection
+        - state: current state.
 
         Returns:
-        - action: an action
+        - action: an action.
         """
         # Preprocessing state
         state = self.prep_state(state)
 
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
 
-        self.qnetwork_local.eval()
+        self.qnet_local.eval()
         with torch.no_grad():
-            action_values = self.qnetwork_local(state)
-        self.qnetwork_local.train()
+            action_values = self.qnet_local(state)
+        self.qnet_local.train()
 
         # Epsilon-greedy action selection
         if random.random() > self.epsilon:
@@ -158,12 +172,12 @@ class Agent(Agent):
             states, actions, rewards, next_states, dones = experiences
 
         # Get max predicted Q values (for next states) from target model
-        Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
+        Q_targets_next = self.qnet_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states 
         Q_targets = rewards + (self.gamma * Q_targets_next * (1 - dones))
 
         # Get expected Q values from local model
-        Q_expected = self.qnetwork_local(states).gather(1, actions)
+        Q_expected = self.qnet_local(states).gather(1, actions)
 
         # Compute loss
         if self.prioritized_memory:
@@ -179,19 +193,14 @@ class Agent(Agent):
         self.optimizer.step()
 
         # Update target network
-        self.soft_update(self.qnetwork_local, self.qnetwork_target, self.tau)                     
+        self.soft_update()                     
 
-    def soft_update(self, local_model: QNetwork, target_model: QNetwork, tau: float):
+    def soft_update(self):
         """Soft update model parameters.
         θ_target = τ*θ_local + (1 - τ)*θ_target
-        
-        Args:
-        - local_model: weights will be copied from
-        - target_model: weights will be copied to
-        - tau: interpolation parameter 
         """
-        for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
-            target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
+        for target_param, local_param in zip(self.qnet_target.parameters(), self.qnet_local.parameters()):
+            target_param.data.copy_(self.tau * local_param.data + (1.0 - self.tau) * target_param.data)
 
     def save_model(self, path: str):
         """
@@ -200,7 +209,7 @@ class Agent(Agent):
         Args:
         - path: path to save the model
         """
-        torch.save(self.qnetwork_local.state_dict(), path)
+        torch.save(self.qnet_local.state_dict(), path)
 
     def load_model(self, path: str):
         """
@@ -209,7 +218,7 @@ class Agent(Agent):
         Args:
         - path: path to load the model
         """
-        self.qnetwork_local.load_state_dict(torch.load(path))
+        self.qnet_local.load_state_dict(torch.load(path))
     
     def get_beta(self, i: int, beta_start: float = 0.4, beta_end: int = 1, beta_growth: float = 1.05):
         """
@@ -225,7 +234,7 @@ class Agent(Agent):
         - beta: beta value for the current iteration
         """
         if not self.prioritized_memory:
-            raise TypeError("This agent is not use prioritized memory")
+            raise TypeError("This agent is not using prioritized memory.")
             
         beta = min(beta_start * (beta_growth ** i), beta_end)
         return beta
@@ -245,5 +254,5 @@ class Agent(Agent):
         - loss: mse loss
         """
         losses = F.mse_loss(Q_expected, Q_targets, reduce=False).squeeze(1) * sampling_weights
-        self.memory.update_priority(index, losses+self.small_eps)
+        self.memory.update_priority(index, losses + self.small_eps)
         return losses.mean()
