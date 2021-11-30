@@ -13,7 +13,8 @@ class AgentConfig(BaseModel):
     tau: float = 0.001
     small_eps: float = 0.03
     update_every: int = 4
+    epsilon_enabled: bool = True
     epsilon_start: float = 1.0
     epsilon_end: float = 0.01
     epsilon_decay: float = 0.99995
-    model_dir: str = "./DuelingDQN.pt"
+    model_dir: str = "./DQN.pt"

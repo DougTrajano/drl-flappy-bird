@@ -20,7 +20,8 @@ class Agent(Agent):
                  memory_size: int = int(1e5), prioritized_memory: bool = False,
                  batch_size: int = 64, gamma: float = 0.99, tau: float = 1e-3,
                  small_eps: float = 1e-5, update_every: int = 4,
-                 epsilon_start: float = 1.0, epsilon_end: float = 0.01, epsilon_decay: float = 0.995,
+                 epsilon_enabled: bool = True, epsilon_start: float = 1.0,
+                 epsilon_end: float = 0.01, epsilon_decay: float = 0.995,
                  **kwargs):
         """
         Initialize a Deep Q-Network agent.
@@ -53,12 +54,16 @@ class Agent(Agent):
         self.tau = tau
         self.small_eps = small_eps
         self.update_every = update_every
+        self.epsilon_enabled = epsilon_enabled
         self.epsilon_start = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay = epsilon_decay
 
         # Initialize epsilon
-        self.epsilon = self.epsilon_start
+        if self.epsilon_enabled:
+            self.epsilon = self.epsilon_start
+        else:
+            self.epsilon = 0.0
 
         self.losses = []
 
@@ -91,8 +96,8 @@ class Agent(Agent):
 
         return f"Epsilon: {self.epsilon:.2f}\tAvg. MSE Loss: {avg_loss:.2f}"
         
-    def step(self, state: np.ndarray, action: int, reward: float,
-             next_state: np.ndarray, done: bool, episode: int):
+    def step(self, state: np.ndarray, action: int, reward: int,
+             next_state: np.ndarray, done: bool, episode: int, **kwargs):
         """
         Save experience in replay memory, and use experiences from memory to learn.
         
@@ -123,7 +128,6 @@ class Agent(Agent):
                     
                 self.learn(experiences)             
 
-    # Decay epsilon
     def decay_eps(self):
         """
         Decay epsilon-greedy used for action selection.
@@ -150,12 +154,13 @@ class Agent(Agent):
         self.qnet_local.train()
 
         # Epsilon-greedy action selection
-        if random.random() > self.epsilon:
-            action = np.argmax(action_values.cpu().data.numpy()).astype(int)
+        if self.epsilon_enabled and random.random() < self.epsilon:
+            action = random.randrange(self.action_size)
         else:
-            action = random.choice(np.arange(self.action_size)).astype(int)
-
-        self.decay_eps()
+            action = np.argmax(action_values.cpu().data.numpy()).astype(int)
+            
+        if self.epsilon_enabled:
+            self.decay_eps()
 
         return action
 

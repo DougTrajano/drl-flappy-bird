@@ -1,5 +1,6 @@
 import time
 import logging
+import numpy as np
 from gym import Env
 from src.base import Agent
 
@@ -38,3 +39,16 @@ def play_env(agent: Agent, env: Env, fps: int = 30, render: bool = False):
     _logger.info("Environment finished.")
 
     return score
+
+def aggregate_list(lst: list, window: int = 100) -> list:
+    """
+    Aggregate a list by a given window.
+
+    Args:
+    - lst: List of integers to aggregate.
+    - window: Window size.
+
+    Returns:
+    - Aggregated scores.
+    """
+    return [np.mean(lst[i:i+window]) for i in range(0, len(lst), window)]

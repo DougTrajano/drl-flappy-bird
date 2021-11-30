@@ -40,6 +40,9 @@ class Agent:
         Returns
         - action: action to take
         """
+        # Preprocessing state
+        state = self.prep_state(state)
+        
         return random.choice(np.arange(self.action_size)).astype(int)
 
     def step(self, state: np.ndarray, action: int, reward: float,
@@ -70,3 +73,21 @@ class Agent:
         - state: preprocessed state
         """
         return state
+
+    def save_model(self, path: str):
+        """
+        Save the model to the given path.
+
+        Args:
+        - path: path to save the model
+        """
+        raise NotImplementedError("save_model not implemented")
+
+    def load_model(self, path: str):
+        """
+        Load the model from the given path.
+
+        Args:
+        - path: path to load the model
+        """
+        raise NotImplementedError("load_model not implemented")

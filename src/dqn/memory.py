@@ -29,7 +29,7 @@ class PrioritizedMemory:
         self.probabilities = np.zeros(memory_size)
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
         
-        _logger.info(f"Prioritized Memory initialized with capacity: {self.memory_size} items.")
+        _logger.info(f"Prioritized Memory initialized with size: {self.memory_size}")
 
     def add(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray, done: bool):
         """Add a new experience to memory.
@@ -57,7 +57,7 @@ class PrioritizedMemory:
         _logger.debug("Sampling batch of experiences.")
 
         self.update_probabilities()
-        index = np.random.choice(range(self.capacity), self.batch_size, replace=False, p=self.probabilities)
+        index = np.random.choice(range(self.memory_size), self.batch_size, replace=False, p=self.probabilities)
         experiences = [self.memory[i] for i in index]
         
         states = torch.from_numpy(np.vstack([e.state for e in experiences if e is not None])).float().to(device)
@@ -109,7 +109,7 @@ class ReplayMemory:
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
     
-        _logger.info(f"Replay Memory initialized with capacity: {self.memory_size} items.")
+        _logger.info(f"Replay Memory initialized with size: {self.memory_size}")
 
     def add(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray, done: bool):
         """Add a new experience to memory."""
