@@ -35,12 +35,13 @@ class Agent(Agent):
         - nb_hidden: number of hidden layers in the network.
         - gamma: discount factor. (Always between 0 and 1.).
         - lam: lambda for GAE-Lambda.
-        - target_kl: Roughly what KL divergence we think is appropriate between new and old policies after an update. This will get used for early stopping. (Usually small, 0.01 or 0.05.)
+        - target_kl: KL divergence between target and current policy. This will get used for early stopping in learn function. (Usually small, 0.01 or 0.05.)
         - policy_lr: learning rate for the policy optimizer.
         - value_function_lr: learning rate for the value function optimizer.
         - train_policy_iters: Maximum number of gradient descent steps to take on policy loss per epoch. (Early stopping may cause optimizer to take fewer than this.)
         - train_value_iters: Number of gradient descent steps to take on value function per epoch.
         - clip_ratio: clipping ratio for the policy objective.
+        - epsilon_enabled: if True, use epsilon-greedy action selection.
         - epsilon_start: initial value for the epsilon parameter.
         - epsilon_end: final value for the epsilon parameter.
         - epsilon_decay: decay rate for the epsilon parameter.

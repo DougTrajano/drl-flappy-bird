@@ -23,7 +23,7 @@ class Trainer(object):
         - n_episodes: maximum number of training episodes.
         - print_range: range to print partials results.
         - early_stop: Stop training when achieve a defined score respecting n_episodes.
-        - max_timestep: maximum number of timesteps per episode.
+        - max_timestep: maximum number of time steps per episode.
         - fps: frames per second (for rendering).
         - render: render the environment.
         - verbose: Print partial results.

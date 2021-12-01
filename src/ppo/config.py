@@ -4,6 +4,8 @@ class AgentConfig(BaseModel):
     state_size: int
     action_size: int
     seed: int = 1993
+    memory_size: int = int(1e5)
+    nb_hidden: tuple = (64, 64)
     gamma: float = 0.99
     lam: float = 0.97
     target_kl: float = 0.01

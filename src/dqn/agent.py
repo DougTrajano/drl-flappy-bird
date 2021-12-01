@@ -27,21 +27,22 @@ class Agent(Agent):
         Initialize a Deep Q-Network agent.
         
         Parameters:
-        - state_size: dimension of each state
-        - action_size: dimension of each action
-        - seed: random seed
-        - nb_hidden: number of hidden units in the network
-        - learning_rate: learning rate for the optimizer
-        - memory_size: size of the memory
-        - prioritized_memory: if True, use prioritized memory
-        - batch_size: size of the batch
-        - gamma: discount factor
-        - tau: interpolation parameter for target network
-        - small_eps: small value used in the priority update
-        - update_every: number of steps before updating the target network
-        - epsilon_start: starting value of epsilon, for epsilon-greedy action selection
-        - epsilon_end: minimum value of epsilon
-        - epsilon_decay: decay rate for epsilon
+        - state_size: dimension of each state.
+        - action_size: dimension of each action.
+        - seed: random seed.
+        - nb_hidden: number of hidden units in the network.
+        - learning_rate: learning rate for the optimizer.
+        - memory_size: size of the memory.
+        - prioritized_memory: if True, use prioritized memory.
+        - batch_size: size of the batch.
+        - gamma: discount factor.
+        - tau: interpolation parameter for target network.
+        - small_eps: small value used in the priority update.
+        - update_every: number of steps before updating the target network.
+        - epsilon_enabled: if True, use epsilon-greedy action selection.
+        - epsilon_start: starting value of epsilon, for epsilon-greedy action selection.
+        - epsilon_end: minimum value of epsilon.
+        - epsilon_decay: decay rate for epsilon.
         """
         self.state_size = state_size
         self.action_size = action_size
