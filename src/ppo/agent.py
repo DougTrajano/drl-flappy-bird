@@ -1,14 +1,17 @@
 import random
+import logging
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import load_model
 from typing import Tuple, List, Any
-from keras.models import load_model
 
 from src.base import Agent
 from src.ppo.memory import Memory
+
+_logger = logging.getLogger(__name__)
 
 
 class Agent(Agent):
@@ -74,18 +77,20 @@ class Agent(Agent):
 
         # Initialize the actor and the critic as keras models
         state_input = keras.Input(shape=(self.state_size,), dtype=tf.float32)
-        logits = self.mlp(state_input, list(nb_hidden) +
+        logits = self.build_mlp(state_input, list(nb_hidden) +
                           [self.action_size], tf.tanh, None)
 
         self.actor = keras.Model(inputs=state_input, outputs=logits)
         self.value = tf.squeeze(
-            self.mlp(state_input, list(nb_hidden) + [1], tf.tanh, None), axis=1
+            self.build_mlp(state_input, list(nb_hidden) + [1], tf.tanh, None), axis=1
         )
         self.critic = keras.Model(inputs=state_input, outputs=self.value)
 
         # Initialize the policy and the value function optimizers
         self.policy_opt = Adam(learning_rate=self.policy_lr)
         self.value_opt = Adam(learning_rate=self.value_lr)
+
+        _logger.info("PPO Agent initialized.")
 
     def logs(self):
         """
@@ -107,6 +112,8 @@ class Agent(Agent):
         Returns
         - action: action to take.
         """
+        _logger.debug(f"Acting on state {state}")
+        
         # Preprocessing state
         state = self.prep_state(state)
 
@@ -120,12 +127,15 @@ class Agent(Agent):
 
         # Epsilon-greedy action selection
         if self.epsilon_enabled and random.random() < self.epsilon:
+            _logger.debug("Epsilon-greedy action selection.")
             action = random.randrange(self.action_size)
         else:
             action = action[0].numpy()
 
         if self.epsilon_enabled:
             self.decay_eps()
+
+        _logger.debug(f"Returning action: {action}")
 
         return action
 
@@ -140,6 +150,9 @@ class Agent(Agent):
         - reward: reward received.
         - done: if the episode is over.
         """
+        _logger.debug({"message": "Registering step", "state": state,
+                       "action": action, "reward": reward, "done": done})
+
         # Preprocessing state
         state = self.prep_state(state)
 
@@ -159,6 +172,8 @@ class Agent(Agent):
             experiences = self.memory.get()
             self.learn(experiences)
 
+        _logger.debug("Finished step.")
+
     def learn(self, experiences: Tuple[Any]):
         """
         Update value parameters using given batch of experience tuples.
@@ -166,6 +181,8 @@ class Agent(Agent):
         Args:
         - experiences: tuple of (states, actions, advantages, returns, logprobs) tuples.
         """
+        _logger.debug("Starting learning.")
+
         states, actions, advantages, returns, logprobs = experiences
 
         # Update the policy and implement early stopping using KL divergence
@@ -177,6 +194,8 @@ class Agent(Agent):
         # Update the value function
         for _ in range(self.train_value_iters):
             self.train_value_function(states, returns)
+
+        _logger.debug("Finished learning.")
 
     def decay_eps(self):
         """
@@ -191,12 +210,20 @@ class Agent(Agent):
         Args:
         - path: path to save the model
         """
+        _logger.debug(f"Saving model to path: {path}")
+
         # remove / at the end of the path
         if path[-1] == "/":
             path = path[:-1]
 
-        self.actor.save(f"{path}/actor")
-        self.critic.save(f"{path}/critic")
+        actor_path = f"{path}/actor"
+        critic_path = f"{path}/critic"
+
+        _logger.debug(f"Saving actor to path: {actor_path}")
+        self.actor.save(actor_path)
+
+        _logger.debug(f"Saving critic to path: {critic_path}")
+        self.critic.save(critic_path)
 
     def load_model(self, path: str = "/PPO"):
         """
@@ -205,17 +232,25 @@ class Agent(Agent):
         Args:
         - path: path to load the model
         """
+        _logger.debug(f"Loading model from path: {path}")
+
         # remove / at the end of the path
         if path[-1] == "/":
             path = path[:-1]
 
-        self.actor = load_model(f"{path}/actor")
-        self.critic = load_model(f"{path}/critic")
+        actor_path = f"{path}/actor"
+        critic_path = f"{path}/critic"
 
-    def mlp(self, x: int, nb_hidden: List[int],
-            activation: callable = tf.tanh, output_activation: callable = None):
+        _logger.debug(f"Loading actor from path: {actor_path}")
+        self.actor = load_model(actor_path)
+
+        _logger.debug(f"Loading critic from path: {critic_path}")
+        self.critic = load_model(critic_path)
+
+    def build_mlp(self, x: int, nb_hidden: List[int],
+                  activation: callable = tf.tanh, output_activation: callable = None):
         """
-        Build a feedforward neural network.
+        Creates a multi-layer perceptron policy.
 
         Args:
         - x: input for the network
@@ -226,6 +261,10 @@ class Agent(Agent):
         Returns:
         - output tensor
         """
+        _logger.debug({"message": "Starting policy network.", "x": x,
+                       "nb_hidden": nb_hidden, "activation": activation,
+                       "output_activation": output_activation})
+
         for size in nb_hidden[:-1]:
             x = layers.Dense(units=size, activation=activation)(x)
         return layers.Dense(units=nb_hidden[-1], activation=output_activation)(x)
@@ -241,11 +280,17 @@ class Agent(Agent):
         Returns:
         - log-probabilities of the actions
         """
+        _logger.debug({"message": "Starting log-probabilities computation.",
+                       "logits": logits, "actions": actions})
+
         logprobs_all = tf.nn.log_softmax(logits)
-        
+
         logprob = tf.reduce_sum(
             tf.one_hot(actions, self.action_size) * logprobs_all, axis=1
         )
+
+        _logger.debug({"message": "Finished log-probabilities computation.",
+                       "logprob": logprob})
 
         return logprob
 
@@ -260,6 +305,11 @@ class Agent(Agent):
         - logprobabilities: batch of log-probabilities.
         - advantages: batch of advantages.
         """
+        _logger.debug({"message": "Starting policy training.",
+                       "states": states, "actions": actions,
+                       "logprobabilities": logprobabilities,
+                       "advantages": advantages})
+
         with tf.GradientTape() as tape:  # Record operations for automatic differentiation.
             ratio = tf.exp(
                 self.compute_logprobabilities(self.actor(states), actions)
@@ -285,6 +335,9 @@ class Agent(Agent):
         )
         kl = tf.reduce_sum(kl)
 
+        _logger.debug({"message": "Finished policy training.",
+                       "policy_loss": policy_loss, "kl": kl})
+
         return kl
 
     def train_value_function(self, states, returns):
@@ -295,6 +348,9 @@ class Agent(Agent):
         - states: batch of states.
         - returns: batch of returns.
         """
+        _logger.debug({"message": "Starting value function training.",
+                          "states": states, "returns": returns})
+
         # Record operations for automatic differentiation.
         with tf.GradientTape() as tape:
             value_loss = tf.reduce_mean((returns - self.critic(states)) ** 2)
@@ -302,3 +358,5 @@ class Agent(Agent):
             value_loss, self.critic.trainable_variables)
         self.value_opt.apply_gradients(
             zip(value_grads, self.critic.trainable_variables))
+
+        _logger.debug({"message": "Finished value function training."})

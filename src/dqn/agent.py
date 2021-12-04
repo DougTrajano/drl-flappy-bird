@@ -1,4 +1,5 @@
 import random
+import logging
 import numpy as np
 from typing import Tuple, Any
 
@@ -10,7 +11,10 @@ from src.dqn.network import QNetwork
 from src.dqn.memory import PrioritizedMemory, ReplayMemory
 from src.base import Agent
 
+_logger = logging.getLogger(__name__)
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class Agent(Agent):
     """Interacts with and learns from the environment."""
@@ -82,6 +86,8 @@ class Agent(Agent):
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
 
+        _logger.info("DQN Agent initialized.")
+
     def logs(self):
         """
         Get the logs of the agent.
@@ -110,6 +116,10 @@ class Agent(Agent):
         - done: if the episode is over
         - episode: current episode (only used for prioritized memory).
         """
+        _logger.debug({"message": "Registering step", "state": state,
+                       "action": action, "reward": reward, "next_state": next_state,
+                       "done": done, "episode": episode})
+
         # Preprocessing states
         state = self.prep_state(state)
         next_state = self.prep_state(next_state)
@@ -144,6 +154,8 @@ class Agent(Agent):
         Returns:
         - action: an action.
         """
+        _logger.debug(f"Acting on state {state}")
+
         # Preprocessing state
         state = self.prep_state(state)
 
@@ -163,6 +175,8 @@ class Agent(Agent):
         if self.epsilon_enabled:
             self.decay_eps()
 
+        _logger.debug(f"Returning action: {action}")
+
         return action
 
     def learn(self, experiences: Tuple[Any]):
@@ -172,6 +186,8 @@ class Agent(Agent):
         Args:
         - experiences: tuple of (s, a, r, s', done) tuples
         """
+        _logger.debug("Starting learning.")
+
         if self.prioritized_memory:
             states, actions, rewards, next_states, dones, index, sampling_weights = experiences
         else:
@@ -199,7 +215,9 @@ class Agent(Agent):
         self.optimizer.step()
 
         # Update target network
-        self.soft_update()                     
+        self.soft_update()
+
+        _logger.debug("Finished learning.")                     
 
     def soft_update(self):
         """Soft update model parameters.
@@ -215,6 +233,8 @@ class Agent(Agent):
         Args:
         - path: path to save the model
         """
+        _logger.debug(f"Saving model to path: {path}")
+
         torch.save(self.qnet_local.state_dict(), path)
 
     def load_model(self, path: str):
@@ -224,6 +244,8 @@ class Agent(Agent):
         Args:
         - path: path to load the model
         """
+        _logger.debug(f"Loading model from path: {path}")
+        
         self.qnet_local.load_state_dict(torch.load(path))
     
     def get_beta(self, i: int, beta_start: float = 0.4, beta_end: int = 1, beta_growth: float = 1.05):

@@ -1,4 +1,4 @@
-# RL - Term Project
+# Playing Flappy Bird with DRL
 
 This repository contains our term project in the Reinforcement Learning course in [PUCRS](https://pucrs.br).
 

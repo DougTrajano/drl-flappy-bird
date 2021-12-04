@@ -11,17 +11,16 @@ class Memory(object):
     Memory to store experience that uses Generalized Advantage Estimation (GAE-Lambda)
     for calculating the advantages of state-action pairs.
     """
-
     def __init__(self, state_size: int, action_size: int, memory_size: int,
                  gamma: float = 0.99, lam: float = 0.95):
         """Initialize Memory object.
 
         Parameters:
-        - state_size: size of the state vector
-        - action_size: size of the action vector
-        - memory_size: size of the memory
-        - gamma: discount factor
-        - lam: lambda parameter for GAE-Lambda
+        - state_size: size of the state vector.
+        - action_size: size of the action vector.
+        - memory_size: size of the memory.
+        - gamma: discount factor.
+        - lam: lambda parameter for GAE-Lambda.
         """
         self.state_size = state_size
         self.action_size = action_size
@@ -69,6 +68,7 @@ class Memory(object):
         Args:
         - last_value: value of the last state
         """
+        _logger.debug(f"Finishing trajectory with last value: {last_value}.")
 
         path_slice = slice(self.trajectory_start_index, self.pointer)
         rewards = np.append(self.rewards[path_slice], last_value)
@@ -84,6 +84,8 @@ class Memory(object):
         )[:-1]
 
         self.trajectory_start_index = self.pointer
+
+        _logger.debug("Finished trajectory,")
 
     def discounted_cum_sums(self, rewards: np.ndarray, discount: float):
         """
@@ -102,6 +104,8 @@ class Memory(object):
         """
         Get all data of the buffer and normalize the advantages.
         """
+        _logger.debug("Getting data from memory.")
+        
         self.pointer = 0
         self.trajectory_start_index = 0
 

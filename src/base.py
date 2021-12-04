@@ -61,7 +61,7 @@ class Agent:
         """
         pass
 
-    def prep_state(state: np.ndarray) -> np.ndarray:
+    def prep_state(self, state: np.ndarray) -> np.ndarray:
         """
         Preprocess state before feeding it to the act function.
         You can replace this function with your own implementation.

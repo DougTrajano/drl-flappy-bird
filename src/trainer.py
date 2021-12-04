@@ -59,6 +59,12 @@ class Trainer(object):
         """
         _logger.info('Starting training...')
 
+        # replace class attributes with kwargs
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                _logger.debug(f'Replacing {key} with {value}')
+                setattr(self, key, value)
+
         self.scores = []
         scores_window = deque(maxlen=self.print_range)
 
@@ -118,10 +124,11 @@ class Trainer(object):
                                 os.makedirs(output_folder)
                             self._agent.save_model(output_path)
 
-            if np.mean(scores_window) >= self.early_stop and ep > self.print_range:
-                if self.verbose:
-                    print(f"\nEnvironment solved in {ep:d} episodes!\tAvg Score: {np.mean(scores_window):.2f}")
-                break
+            if ep > self.print_range:
+                if self.early_stopping(scores_window, self.early_stop):
+                    if self.verbose:
+                        print(f"\nEnvironment solved in {ep:d} episodes!\tAvg Score: {np.mean(scores_window):.2f}")
+                    break
 
         self._env.reset()
 
@@ -131,3 +138,15 @@ class Trainer(object):
         _logger.info(f"Training finished.\nBest score: {self.best_score:.2f}\tLast score: {self.last_score:.2f}")
 
         return True
+
+    def early_stopping(self, scores: list, early_stop: int = 100, **kwargs):
+        """
+        Check if the training has reached the early stopping criteria.
+
+        Args:
+        - scores: list of scores.
+        - early_stop: early stopping criteria.
+        """
+        if np.mean(scores) >= early_stop:
+            return True
+        
